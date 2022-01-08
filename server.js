@@ -4,6 +4,7 @@ process.env.TZ = 'Asia/Bangkok'
 const path = require("path")
 
 const express = require("express")
+const eazy = require('./modules/eazyidc')
 
 let compression = require("compression")
 let helmet = require("helmet")
@@ -18,3 +19,11 @@ app.use(helmet())
 
 app.use(express.urlencoded({ extended: false }))
 
+app.use('/', express.static(path.join(__dirname, 'public')))
+
+app.use('/account', require('./routes/account'))
+
+app.listen(process.env.port, () => eazy.log(`backend running on port ${process.env.port}`))
+
+eazy.createDirectory('./logs')
+eazy.createDirectory('./cache')
