@@ -15,7 +15,7 @@ const pool = mariadb.createPool({
   connectionLimit: 10
 })
 
-async function login(email, password) {
+async function login(email, password, ip) {
   let db
   try {
     db = await pool.getConnection()
@@ -27,17 +27,23 @@ async function login(email, password) {
 
         const date = new Date(rows[0].last_log * 1000)
 
+        let server = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ?;", [rows[0].accountId])
+
         let result = {
           profile: {
+            accountId: rows[0].accountId,
             email: rows[0].email,
             password: rows[0].password,
             phone: eazy.formatPhoneNumber(rows[0].phone),
+            status: rows[0].status,
+            serverUnit: server[0].server,
             last_login: eazy.addZero(date.getDate())+"/"+eazy.addZero((date.getMonth()+1))+"/"+date.getFullYear()+" "+eazy.addZero(date.getHours())+":"+eazy.addZero(date.getMinutes())+":"+eazy.addZero(date.getSeconds())
           },
           accessToken: accessToken
         }
 
         await db.query("UPDATE `account` SET `last_log` = ? WHERE `account`.`email` LIKE ?;", [Math.floor(new Date()/1000), email])
+        await db.query("INSERT INTO `user_log`(`userLogId`,`accountId`,`log_ip_addr`,`log_date`) VALUES (?,?,?,?);", ['', rows[0].accountId, ip, eazy.getDate()])
 
         return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.loginSuccess, result)
       } else {
@@ -53,7 +59,7 @@ async function login(email, password) {
   }
 }
 
-async function register(email, password, phone) {
+async function register(email, password, phone, firstname, lastname) {
   let db
   try {
     db = await pool.getConnection();
@@ -62,7 +68,7 @@ async function register(email, password, phone) {
       return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorEmailRegister)
     } else {
       let pwd = bcrypt.hashSync(password, saltRounds)
-      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `status`, `created_date`) VALUES (?,?,?,?,?,?);", ['', email, pwd, phone, 0, eazy.getDate()])
+      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `firstname`, `lastname`, `status`, `created_date`) VALUES (?,?,?,?,?,?,?,?);", ['', email, pwd, phone, firstname, lastname, 0, eazy.getDate()])
       if (rows) {
         let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
         if (account.length === 1) {
@@ -117,9 +123,86 @@ async function changePWD(email, newPassword, verifyNewPassword) {
   }
 }
 
+async function getBalance(email) {
+  let userBalance = {}
+  let db
+
+  if (await eazy.checkExpCache(email, 'balance', 0.05) === true) {
+
+  }
+
+  try {
+    //let { data } = await axios.get(`${process.env.}`)
+
+    db = await pool.getConnection();
+    let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+    if (account.length > 0) {
+      let inv_data = await db.query("SELECT * from `account_wallet` WHERE accountId LIKE ?", [account[0].accountId])
+      if (inv_data.length === 1) {
+        userBalance.balance = eazy.numberFormat(inv_data[0].balance)
+      }
+
+      eazy.writeCache(email, "balance", JSON.stringify(userBalance))
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, userBalance)
+    }
+    
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function createServer() {
+  let db
+  try {
+    db = await pool.getConnection();
+  } catch (error) {
+
+  } finally {
+
+  }
+}
+
+async function getPackage() {
+  let db
+  try {
+    db = await pool.getConnection();
+    let rows = await db.query("SELECT * from `package`")
+    if (rows.length > 0) {
+      let packageList = {
+        package: []
+      }
+
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i].status == 1) {
+          packageList.package.push({
+            packageId: rows[i].packageId,
+            cpu_unit: rows[i].cpu_unit,
+            memory_unit: rows[i].memory_unit,
+            ssd_unit: rows[i].ssd_unit,
+            transfer_unit: rows[i].transfer_unit,
+            price: rows[i].price,
+            status: rows[i].status,
+          })
+        }
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 module.exports = {
   login,
   register,
   verify,
-  changePWD
+  changePWD,
+  getBalance,
+  createServer,
+  getPackage
 }

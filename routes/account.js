@@ -4,9 +4,11 @@ const router = express()
 const account = require('../modules/account')
 const auth = require('../middleware/auth')
 const eazy = require('../modules/eazyidc')
+const requestIp = require("request-ip")
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
+  var  clientIp = requestIp.getClientIp(req)
 
   if (email.length === 0 && password.length === 0) {
     return res.json(eazy.response(1, 'error', 'กรุณาระบุอีเมล์และรหัสผ่าน')) 
@@ -16,19 +18,31 @@ router.post('/login', async (req, res) => {
     return res.json(eazy.response(1, 'error', 'กรุณาระบุรหัสผ่าน')) 
   }
     
-  res.json(await account.login(email, password))
+  res.json(await account.login(email, password, clientIp))
 })
 
 router.post('/register', async (req, res) => {
-  const { email, password, phone } = req.body
+  const { email, password, phone, firstname, lastname } = req.body
 
-  res.json(await account.register(email, password, phone))
+  res.json(await account.register(email, password, phone, firstname, lastname))
 })
 
 router.post('/change_pwd', auth, async (req, res) => {
   const { newPassword, verifyNewPassword } = req.body
 
   res.json(await account.changePWD(req.client.email, newPassword, verifyNewPassword))
+})
+
+router.get('/balance', auth, async (req, res) => {
+  res.json(await account.getBalance(req.client.email))
+})
+
+router.post('/create-server', auth, async (req, res) => {
+  res.json(await account.createServer())
+})
+
+router.get('/package', auth, async (req, res) => {
+  res.json(await account.getPackage())
 })
 
 module.exports = router
