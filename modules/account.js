@@ -27,16 +27,11 @@ async function login(email, password, ip) {
 
         const date = new Date(rows[0].last_log * 1000)
 
-        let server = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ?;", [rows[0].accountId])
-
         let result = {
           profile: {
-            accountId: rows[0].accountId,
             email: rows[0].email,
-            password: rows[0].password,
             phone: eazy.formatPhoneNumber(rows[0].phone),
             status: rows[0].status,
-            serverUnit: server[0].server,
             last_login: eazy.addZero(date.getDate())+"/"+eazy.addZero((date.getMonth()+1))+"/"+date.getFullYear()+" "+eazy.addZero(date.getHours())+":"+eazy.addZero(date.getMinutes())+":"+eazy.addZero(date.getSeconds())
           },
           accessToken: accessToken
@@ -87,7 +82,7 @@ async function register(email, password, phone, firstname, lastname) {
 }
 
 async function verify() {
-
+  
 }
 
 async function changePWD(email, newPassword, verifyNewPassword) {
@@ -145,7 +140,6 @@ async function getBalance(email) {
       eazy.writeCache(email, "balance", JSON.stringify(userBalance))
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, userBalance)
     }
-    
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
   } finally {
@@ -153,14 +147,110 @@ async function getBalance(email) {
   }
 }
 
-async function createServer() {
+async function createServer(email, osType, osVersion, ssdType, packageId, hostName, userName, password) {
   let db
   try {
     db = await pool.getConnection();
+    let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+    if (rows.length > 0) {
+      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11111', 1, eazy.getDate(), eazy.getFutureDate()])
+      if (server) {
+        return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+      }
+    }
   } catch (error) {
-
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
   } finally {
+    if (db) db.release()
+  }
+}
 
+async function getServer(email) {
+  let db
+  try {
+    db = await pool.getConnection();
+    let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+    if (account.length > 0) {
+      let rows = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ?;", [account[0].accountId])
+      if (rows) {
+        let acc_server = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
+                                         FROM account_server JOIN package ON account_server.packageId = package.packageId 
+                                         WHERE accountId LIKE ?;`, [account[0].accountId])
+        if (acc_server.length > 0) {
+          let server = {
+            serverUnit: rows[0].server,
+            serverList: [],
+          }
+
+          for (let i = 0; i < acc_server.length; i++) {
+            server.serverList.push({
+              serverId: acc_server[i].serverId,
+              accountId: acc_server[i].accountId,
+              packageId: acc_server[i].packageId,
+              os_type: acc_server[i].os_type,
+              os_version: acc_server[i].os_version,
+              ssd_type: acc_server[i].ssd_type,
+              hostname: acc_server[i].hostname,
+              username: acc_server[i].username,
+              password: acc_server[i].password,
+              ip_address: acc_server[i].ip_address,
+              status: acc_server[i].server_status,
+              created_date: acc_server[i].created_date,
+              expired_date: acc_server[i].expired_date,
+              cpu_unit: acc_server[i].cpu_unit,
+              memory_unit: acc_server[i].memory_unit,
+              ssd_unit: acc_server[i].ssd_unit,
+              transfer_unit: acc_server[i].transfer_unit
+            }) 
+          }
+
+          return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, server)
+        }
+      }
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function getServerDetail(serverId) {
+  let db 
+  
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
+                               FROM account_server JOIN package ON account_server.packageId = package.packageId 
+                               WHERE serverId LIKE ?;`, [serverId])
+    if (rows.length === 1) {
+      let serverDetail = {
+        server: {
+          serverId: rows[0].serverId,
+          accountId: rows[0].accountId,
+          packageId: rows[0].packageId,
+          os_type: rows[0].os_type,
+          os_version: rows[0].os_version,
+          ssd_type: rows[0].ssd_type,
+          hostname: rows[0].hostname,
+          username: rows[0].username,
+          password: rows[0].password,
+          ip_address: rows[0].ip_address,
+          status: rows[0].server_status,
+          created_date: rows[0].created_date,
+          expired_date: rows[0].expired_date,
+          cpu_unit: rows[0].cpu_unit,
+          memory_unit: rows[0].memory_unit,
+          ssd_unit: rows[0].ssd_unit,
+          transfer_unit: rows[0].transfer_unit
+        }
+      }
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, serverDetail)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
   }
 }
 
@@ -204,5 +294,7 @@ module.exports = {
   changePWD,
   getBalance,
   createServer,
+  getServer,
+  getServerDetail,
   getPackage
 }

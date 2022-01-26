@@ -126,6 +126,21 @@ function getDate() {
   return message
 }
 
+function getFutureDate() {
+  let futureDate = new Date()
+  futureDate.setDate(futureDate.getDate() + 30)
+  let d = addZero(futureDate.getDate())
+  let m = addZero(futureDate.getMonth()+1)
+  let y = addZero(futureDate.getFullYear())
+  let h = addZero(futureDate.getHours())
+  let i = addZero(futureDate.getMinutes())
+  let s = addZero(futureDate.getSeconds())
+
+  let future = `${y}-${m}-${d} ${h}:${i}:${s}`;
+
+  return future
+}
+
 function formatPhoneNumber(phone) {
   var cleaned = ('' + phone).replace(/\D/g, '');
   var match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/)
@@ -146,5 +161,6 @@ module.exports = {
   currencyFormat,
   numberFormat,
   getDate,
+  getFutureDate,
   formatPhoneNumber
 }

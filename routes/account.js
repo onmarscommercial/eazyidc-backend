@@ -8,7 +8,7 @@ const requestIp = require("request-ip")
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
-  var  clientIp = requestIp.getClientIp(req)
+  var clientIp = requestIp.getClientIp(req)
 
   if (email.length === 0 && password.length === 0) {
     return res.json(eazy.response(1, 'error', 'กรุณาระบุอีเมล์และรหัสผ่าน')) 
@@ -38,7 +38,17 @@ router.get('/balance', auth, async (req, res) => {
 })
 
 router.post('/create-server', auth, async (req, res) => {
-  res.json(await account.createServer())
+  const { osType, osVersion, ssdType, packageId, hostName, userName, password } = req.body
+
+  res.json(await account.createServer(req.client.email, osType, osVersion, ssdType, packageId, hostName, userName, password))
+})
+
+router.get('/server', auth, async (req, res) => {
+  res.json(await account.getServer(req.client.email))
+})
+
+router.get('/server-detail/:serverId', auth, async (req, res) => {
+  res.json(await account.getServerDetail(req.params.serverId))
 })
 
 router.get('/package', auth, async (req, res) => {
