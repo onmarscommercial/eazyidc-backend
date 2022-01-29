@@ -29,6 +29,7 @@ async function login(email, password, ip) {
 
         let result = {
           profile: {
+            accountId: rows[0].accountId,
             email: rows[0].email,
             phone: eazy.formatPhoneNumber(rows[0].phone),
             status: rows[0].status,
@@ -81,8 +82,27 @@ async function register(email, password, phone, firstname, lastname) {
   }
 }
 
-async function verify() {
-  
+async function verifyIdentity(email, path) {
+  let db;
+  let filepath = path.substring(7)
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+    if (rows.length > 0) {
+      let verify = await db.query("INSERT INTO `file_identity`(`identityId`, `accountId`, `filepath`) VALUES (?,?,?);", ['', rows[0].accountId, filepath])
+        if (verify) {
+          return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.uploadFileSuccess)
+        }
+      // let update = await db.query("UPDATE `account` SET status = ?, verified_date = ? WHERE accountId LIKE ?;", [1, eazy.getDate(), rows[0].accountId])
+      // if (update.affectedRows === 1) {
+        
+      // }
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function changePWD(email, newPassword, verifyNewPassword) {
@@ -287,14 +307,60 @@ async function getPackage() {
   }
 }
 
+async function openServer(serverId) {
+  let db
+  try {
+    db = await pool.getConnection()
+    let open = await db.query("UPDATE `account_server` SET status = ? WHERE serverId LIKE ?;", [1, serverId])
+    if (open.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.openServerSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorOpenServer)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function shutdownServer(serverId) {
+  let db
+  try {
+    db = await pool.getConnection()
+    let close = await db.query("UPDATE `account_server` SET status = ? WHERE serverId LIKE ?;", [0, serverId])
+    if (close.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.shutdownServerSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorShutdownServer)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function restartServer() {
+
+}
+
+async function consoleServer() {
+
+}
+
 module.exports = {
   login,
   register,
-  verify,
+  verifyIdentity,
   changePWD,
   getBalance,
   createServer,
   getServer,
   getServerDetail,
-  getPackage
+  getPackage,
+  openServer,
+  shutdownServer,
+  restartServer,
+  consoleServer
 }

@@ -5,6 +5,7 @@ const account = require('../modules/account')
 const auth = require('../middleware/auth')
 const eazy = require('../modules/eazyidc')
 const requestIp = require("request-ip")
+const multer = require("multer")
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
@@ -53,6 +54,44 @@ router.get('/server-detail/:serverId', auth, async (req, res) => {
 
 router.get('/package', auth, async (req, res) => {
   res.json(await account.getPackage())
+})
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './public/verifydoc/')
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname)
+  }
+})
+
+const upload = multer({storage: storage})
+
+router.post('/verify-identity', upload.single("file"), async (req, res) => {
+  const { email } = req.body
+  const { path } = req.file 
+
+  res.json(await account.verifyIdentity(email, path))
+})
+
+router.post('/open-server', auth, async (req, res) => {
+  const { serverId } = req.body
+
+  res.json(await account.openServer(serverId))
+})
+
+router.post('/shutdown-server', auth, async (req, res) => {
+  const { serverId } = req.body
+
+  res.json(await account.shutdownServer(serverId))
+})
+
+router.post('/restart-server', auth, async (req, res) => {
+
+})
+
+router.post('/console-server', auth, async (req, res) => {
+
 })
 
 module.exports = router
