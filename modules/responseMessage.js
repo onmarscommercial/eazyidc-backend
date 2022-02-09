@@ -8,6 +8,7 @@ module.exports = {
   openServerSuccess: "เปิดเครื่องสำเร็จ",
   shutdownServerSuccess: "ปิดเครื่องสำเร็จ",
   uploadFileSuccess: "อัพโหลดไฟล์สำเร็จ",
+  deleteServerSuccess: "ลบเซิร์ฟเวอร์สำเร็จ",
 
   errorCode: 1,
   errorStatus: "error",
@@ -22,4 +23,5 @@ module.exports = {
   errorOpenServer: "เปิดเครื่องไม่สำเร็จ",
   errorShutdownServer: "ปิดเครื่องไม่สำเร็จ",
   erroruploadFile: "อัพโหลดไฟล์ไม่สำเร็จ",
+  errorDeleteServer: "ลบเซิร์ฟเวอร์ไม่สำเร็จ",
 }

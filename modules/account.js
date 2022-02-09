@@ -32,14 +32,15 @@ async function login(email, password, ip) {
             accountId: rows[0].accountId,
             email: rows[0].email,
             phone: eazy.formatPhoneNumber(rows[0].phone),
-            status: rows[0].status,
+            //status: rows[0].status,
             last_login: eazy.addZero(date.getDate())+"/"+eazy.addZero((date.getMonth()+1))+"/"+date.getFullYear()+" "+eazy.addZero(date.getHours())+":"+eazy.addZero(date.getMinutes())+":"+eazy.addZero(date.getSeconds())
           },
+          //status: rows[0].status,
           accessToken: accessToken
         }
 
         await db.query("UPDATE `account` SET `last_log` = ? WHERE `account`.`email` LIKE ?;", [Math.floor(new Date()/1000), email])
-        await db.query("INSERT INTO `user_log`(`userLogId`,`accountId`,`log_ip_addr`,`log_date`) VALUES (?,?,?,?);", ['', rows[0].accountId, ip, eazy.getDate()])
+        await db.query("INSERT INTO `account_log`(`accountLogId`,`accountId`,`log_ip_addr`,`log_date`) VALUES (?,?,?,?);", ['', rows[0].accountId, ip, eazy.getDate()])
 
         return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.loginSuccess, result)
       } else {
@@ -64,7 +65,7 @@ async function register(email, password, phone, firstname, lastname) {
       return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorEmailRegister)
     } else {
       let pwd = bcrypt.hashSync(password, saltRounds)
-      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `firstname`, `lastname`, `status`, `created_date`) VALUES (?,?,?,?,?,?,?,?);", ['', email, pwd, phone, firstname, lastname, 0, eazy.getDate()])
+      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `firstname`, `lastname`, `status`, `created_date`) VALUES (?,?,?,?,?,?,?,?);", ['', email, pwd, phone, firstname, lastname, "WV", eazy.getDate()])
       if (rows) {
         let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
         if (account.length === 1) {
@@ -89,14 +90,13 @@ async function verifyIdentity(email, path) {
     db = await pool.getConnection()
     let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
     if (rows.length > 0) {
-      let verify = await db.query("INSERT INTO `file_identity`(`identityId`, `accountId`, `filepath`) VALUES (?,?,?);", ['', rows[0].accountId, filepath])
+      let update = await db.query("UPDATE `account` SET status = ? WHERE accountId LIKE ?;", ["WA", rows[0].accountId])
+      if (update.affectedRows === 1) {
+        let verify = await db.query("INSERT INTO `file_identity`(`identityId`, `accountId`, `filepath`) VALUES (?,?,?);", ['', rows[0].accountId, filepath])
         if (verify) {
           return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.uploadFileSuccess)
         }
-      // let update = await db.query("UPDATE `account` SET status = ?, verified_date = ? WHERE accountId LIKE ?;", [1, eazy.getDate(), rows[0].accountId])
-      // if (update.affectedRows === 1) {
-        
-      // }
+      }
     }
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
@@ -173,7 +173,7 @@ async function createServer(email, osType, osVersion, ssdType, packageId, hostNa
     db = await pool.getConnection();
     let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
     if (rows.length > 0) {
-      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11111', 1, eazy.getDate(), eazy.getFutureDate()])
+      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11111', 1, 1, eazy.getDate(), eazy.getFutureDate()])
       if (server) {
         return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
       }
@@ -191,11 +191,11 @@ async function getServer(email) {
     db = await pool.getConnection();
     let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
     if (account.length > 0) {
-      let rows = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ?;", [account[0].accountId])
+      let rows = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ? AND account_server.`status` = ?;", [account[0].accountId, 1])
       if (rows) {
-        let acc_server = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
+        let acc_server = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, onoff, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
                                          FROM account_server JOIN package ON account_server.packageId = package.packageId 
-                                         WHERE accountId LIKE ?;`, [account[0].accountId])
+                                         WHERE accountId LIKE ? AND account_server.status = ?;`, [account[0].accountId, 1])
         if (acc_server.length > 0) {
           let server = {
             serverUnit: rows[0].server,
@@ -214,6 +214,7 @@ async function getServer(email) {
               username: acc_server[i].username,
               password: acc_server[i].password,
               ip_address: acc_server[i].ip_address,
+              onoff: acc_server[0].onoff,
               status: acc_server[i].server_status,
               created_date: acc_server[i].created_date,
               expired_date: acc_server[i].expired_date,
@@ -237,10 +238,9 @@ async function getServer(email) {
 
 async function getServerDetail(serverId) {
   let db 
-  
   try {
     db = await pool.getConnection()
-    let rows = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
+    let rows = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, onoff, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
                                FROM account_server JOIN package ON account_server.packageId = package.packageId 
                                WHERE serverId LIKE ?;`, [serverId])
     if (rows.length === 1) {
@@ -256,6 +256,7 @@ async function getServerDetail(serverId) {
           username: rows[0].username,
           password: rows[0].password,
           ip_address: rows[0].ip_address,
+          onoff: rows[0].onoff,
           status: rows[0].server_status,
           created_date: rows[0].created_date,
           expired_date: rows[0].expired_date,
@@ -307,11 +308,26 @@ async function getPackage() {
   }
 }
 
+async function getUserStatus(email) {
+  let db 
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+    if (rows.length > 0) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, rows[0].status)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 async function openServer(serverId) {
   let db
   try {
     db = await pool.getConnection()
-    let open = await db.query("UPDATE `account_server` SET status = ? WHERE serverId LIKE ?;", [1, serverId])
+    let open = await db.query("UPDATE `account_server` SET onoff = ? WHERE serverId LIKE ?;", [1, serverId])
     if (open.affectedRows === 1) {
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.openServerSuccess)
     } else {
@@ -328,7 +344,7 @@ async function shutdownServer(serverId) {
   let db
   try {
     db = await pool.getConnection()
-    let close = await db.query("UPDATE `account_server` SET status = ? WHERE serverId LIKE ?;", [0, serverId])
+    let close = await db.query("UPDATE `account_server` SET onoff = ? WHERE serverId LIKE ?;", [0, serverId])
     if (close.affectedRows === 1) {
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.shutdownServerSuccess)
     } else {
@@ -349,6 +365,23 @@ async function consoleServer() {
 
 }
 
+async function deleteServer(serverId) {
+  let db 
+  try {
+    db = await pool.getConnection()
+    let del = await db.query("UPDATE `account_server` SET status = ? WHERE serverId LIKE ?;", [0, serverId])
+    if (del.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.deleteServerSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorDeleteServer)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 module.exports = {
   login,
   register,
@@ -359,8 +392,10 @@ module.exports = {
   getServer,
   getServerDetail,
   getPackage,
+  getUserStatus,
   openServer,
   shutdownServer,
   restartServer,
-  consoleServer
+  consoleServer,
+  deleteServer
 }

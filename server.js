@@ -21,7 +21,8 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/', express.static(path.join(__dirname, 'public')))
 
-app.use('/account', require('./routes/account'))
+app.use('/account', require('./routes/account'));
+app.use('/employee', require('./routes/employee'));
 
 app.listen(process.env.port, () => eazy.log(`backend running on port ${process.env.port}`))
 

@@ -56,6 +56,10 @@ router.get('/package', auth, async (req, res) => {
   res.json(await account.getPackage())
 })
 
+router.get('/user-status', auth, async (req, res) => {
+  res.json(await account.getUserStatus(req.client.email))
+})
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, './public/verifydoc/')
@@ -92,6 +96,12 @@ router.post('/restart-server', auth, async (req, res) => {
 
 router.post('/console-server', auth, async (req, res) => {
 
+})
+
+router.post('/delete-server', auth, async (req, res) => {
+  const { serverId } = req.body
+
+  res.json(await account.deleteServer(serverId))
 })
 
 module.exports = router
