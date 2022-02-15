@@ -32,10 +32,9 @@ async function login(email, password, ip) {
             accountId: rows[0].accountId,
             email: rows[0].email,
             phone: eazy.formatPhoneNumber(rows[0].phone),
-            //status: rows[0].status,
+            login: true,
             last_login: eazy.addZero(date.getDate())+"/"+eazy.addZero((date.getMonth()+1))+"/"+date.getFullYear()+" "+eazy.addZero(date.getHours())+":"+eazy.addZero(date.getMinutes())+":"+eazy.addZero(date.getSeconds())
           },
-          //status: rows[0].status,
           accessToken: accessToken
         }
 
