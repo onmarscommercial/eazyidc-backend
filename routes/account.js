@@ -23,9 +23,9 @@ router.post('/login', async (req, res) => {
 })
 
 router.post('/register', async (req, res) => {
-  const { email, password, phone, firstname, lastname } = req.body
+  const { email, password, phone, firstname, lastname, customerType, companyName, taxId } = req.body
 
-  res.json(await account.register(email, password, phone, firstname, lastname))
+  res.json(await account.register(email, password, phone, firstname, lastname, customerType, companyName, taxId))
 })
 
 router.post('/change_pwd', auth, async (req, res) => {

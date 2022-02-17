@@ -55,7 +55,7 @@ async function login(email, password, ip) {
   }
 }
 
-async function register(email, password, phone, firstname, lastname) {
+async function register(email, password, phone, firstname, lastname, customerType, companyName, taxId) {
   let db
   try {
     db = await pool.getConnection();
@@ -64,7 +64,7 @@ async function register(email, password, phone, firstname, lastname) {
       return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorEmailRegister)
     } else {
       let pwd = bcrypt.hashSync(password, saltRounds)
-      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `firstname`, `lastname`, `status`, `created_date`) VALUES (?,?,?,?,?,?,?,?);", ['', email, pwd, phone, firstname, lastname, "WV", eazy.getDate()])
+      let rows = await db.query("INSERT INTO `account`(`accountId`, `email`, `password`, `phone`, `customerType`,`firstname`, `lastname`, `companyName`, `taxId`,`status`, `created_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?);", ['', email, pwd, phone, customerType, firstname, lastname, companyName, taxId, "WV", eazy.getDate()])
       if (rows) {
         let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
         if (account.length === 1) {
