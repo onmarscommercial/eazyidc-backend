@@ -56,6 +56,11 @@ router.get('/package', auth, async (req, res) => {
   res.json(await account.getPackage())
 })
 
+router.post('/package-type', auth, async (req, res) => {
+  const { ssdType } = req.body
+  res.json(await account.getPackage(ssdType))
+})
+
 router.get('/user-status', auth, async (req, res) => {
   res.json(await account.getUserStatus(req.client.email))
 })

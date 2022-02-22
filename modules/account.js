@@ -172,7 +172,7 @@ async function createServer(email, osType, osVersion, ssdType, packageId, hostNa
     db = await pool.getConnection();
     let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
     if (rows.length > 0) {
-      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11111', 1, 1, eazy.getDate(), eazy.getFutureDate()])
+      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11.1.1.1', 1, 1, eazy.getDate(), eazy.getFutureDate()])
       if (server) {
         return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
       }
@@ -274,11 +274,17 @@ async function getServerDetail(serverId) {
   }
 }
 
-async function getPackage() {
+async function getPackage(ssdType) {
   let db
+  let rows
   try {
     db = await pool.getConnection();
-    let rows = await db.query("SELECT * from `package`")
+    if (ssdType === undefined) {
+      rows = await db.query("SELECT * from `package`")
+    } else {
+      rows = await db.query("SELECT * from `package` WHERE `ssd_type` LIKE ?;", [ssdType])
+    }
+     
     if (rows.length > 0) {
       let packageList = {
         package: []
