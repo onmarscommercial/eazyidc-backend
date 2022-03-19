@@ -87,7 +87,7 @@ async function getEmployee() {
   }
 }
 
-async function addEmployee(employeeId, username, password, firstname, lastname, roleId, status) {
+async function addEmployee(createdBy, username, password, firstname, lastname, roleId, status) {
   let db;
   try {
     db = await pool.getConnection()
@@ -100,7 +100,7 @@ async function addEmployee(employeeId, username, password, firstname, lastname, 
       if (rows) {
         let employee = await db.query("SELECT * FROM `employee` WHERE username LIKE ?;", [username])
         if (employee.length === 1) {
-          let update = await db.query("UPDATE `employee` SET createdBy = ?, createdAt = ? WHERE `username` LIKE ?;", [employeeId, eazy.getDate(), username])
+          let update = await db.query("UPDATE `employee` SET createdBy = ?, createdAt = ? WHERE `username` LIKE ?;", [createdBy, eazy.getDate(), username])
           if (update.affectedRows === 1) {
             return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
           } else {
