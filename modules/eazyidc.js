@@ -150,6 +150,19 @@ function formatPhoneNumber(phone) {
   return null
 }
 
+function formatDate(date) {
+  var date = new Date(date)
+  var dd = String(date.getDate()).padStart(2, '0');
+  var mm = String(date.getMonth() + 1).padStart(2, '0')
+  var yyyy = date.getFullYear()
+  var h = date.getHours()
+  var i = date.getMinutes()
+
+  date = dd + '/' + mm + '/' + yyyy + ' ' + h + ':' + i
+
+  return date
+}
+
 module.exports = {
   response,
   log,
@@ -162,5 +175,6 @@ module.exports = {
   numberFormat,
   getDate,
   getFutureDate,
-  formatPhoneNumber
+  formatPhoneNumber,
+  formatDate
 }

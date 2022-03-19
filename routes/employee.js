@@ -10,15 +10,19 @@ router.get('/test', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
+  const { username, password } = req.body
 
+  res.json(await employee.login(username, password))
 })
 
-router.get('/employee', async (req, res) => {
-
+router.get('/employee', auth, async (req, res) => {
+  res.json(await employee.getEmployee())
 })
 
-router.post('/add-employee', async (req, res) => {
+router.post('/add-employee', auth, async (req, res) => {
+  const { createdBy, username, password, firstname, lastname, roleId, status } = req.body
 
+  res.json(await employee.addEmployee(createdBy, username, password, firstname, lastname, roleId, status))
 })
 
 router.post('/edit-employee', async (req, res) => {
@@ -29,7 +33,7 @@ router.post('/delete-employee', async (req, res) => {
   
 })
 
-router.get('/package', async (req, res) => {
+router.get('/package', auth, async (req, res) => {
   res.json(await employee.getPackage())
 })
 
