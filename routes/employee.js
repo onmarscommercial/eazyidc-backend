@@ -37,12 +37,24 @@ router.get('/package', auth, async (req, res) => {
   res.json(await employee.getPackage())
 })
 
-router.post('/add-package', async (req, res) => {
+router.post('/add-package', auth, async (req, res) => {
+  const { cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy } = req.body
 
+  res.json(await employee.addPackage(cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy))
 })
 
 router.post('/edit-package', async (req, res) => {
 
+})
+
+router.get('/customer', auth, async (req, res) => {
+  res.json(await employee.getCustomer())
+})
+
+router.post('/add-customer', auth, async (req, res) => {
+  const { customerType, firstname, lastname, companyName, taxId, email, password, phone } = req.body
+
+  res.json(await employee.addCustomer(customerType, firstname, lastname, companyName, taxId, email, password, phone))
 })
 
 router.post('/check-verify-identity', async (req, res) => {

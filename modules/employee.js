@@ -102,7 +102,7 @@ async function addEmployee(createdBy, username, password, firstname, lastname, r
         if (employee.length === 1) {
           let update = await db.query("UPDATE `employee` SET createdBy = ?, createdAt = ? WHERE `username` LIKE ?;", [createdBy, eazy.getDate(), username])
           if (update.affectedRows === 1) {
-            return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+            return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
           } else {
             return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
           }
@@ -151,6 +151,12 @@ async function getPackage() {
       }
 
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
+    } else {
+      let packageList = {
+        package: []
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
     }
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
@@ -159,11 +165,91 @@ async function getPackage() {
   }
 }
 
-async function addPackage() {
-
+async function addPackage(cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("INSERT INTO `package`(`packageId`, `cpu_unit`, `memory_unit`, `ssd_unit`, `transfer_unit`, `price`, `ssd_type`, `status`, `createdBy`, `createdAt`) VALUES (?,?,?,?,?,?,?,?,?,?);", ['', cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy, eazy.getDate()])
+    if (rows) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function editPackage() {
+
+}
+
+async function getCustomer() {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `account`")
+    if (rows.length > 0) {
+      let customerList = {
+        customer: []
+      }
+
+      for (let i = 0; i < rows.length; i++) {
+        customerList.customer.push({
+          accountId: rows[i].accountId,
+          email: rows[i].email,
+          phone: eazy.formatPhoneNumber(rows[0].phone),
+          customerType: rows[i].customerType,
+          firstname: rows[i].firstname,
+          lastname: rows[i].lastname,
+          companyName: rows[i].companyName,
+          taxId: rows[i].taxId,
+        })
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, customerList)
+    } else {
+      let customerList = {
+        customer: []
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, customerList)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function addCustomer(customerType, firstname, lastname, companyName, taxId, email, password, phone) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let getAccount = await db.query("SELECT email from account WHERE email LIKE ?", [email])
+    if (getAccount.length > 0) {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorEmailRegister)
+    } else {
+      let pwd = bcrypt.hashSync(password, saltRounds)
+      let rows = await db.query("INSERT INTO `account`(`accountId`,`email`,`password`,`phone`,`customerType`,`firstname`,`lastname`,`companyName`,`taxId`,`status`,`created_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?);", ['', email, pwd, phone, customerType, firstname, lastname, companyName, taxId, "WV", eazy.getDate()])
+      if (rows) {
+        let account = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
+        if (account.length === 1) {
+          let wallet = await db.query("INSERT INTO `account_wallet`(`walletId`,`accountId`,`balance`) VALUES (?,?,?);", ['', account[0].accountId, '0'])
+          if (wallet) {
+            return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function editCustomer() {
 
 }
 
@@ -180,5 +266,8 @@ module.exports = {
   getPackage,
   addPackage,
   editPackage,
+  getCustomer,
+  addCustomer, 
+  editCustomer,
   checkVerifyIdentity
 }

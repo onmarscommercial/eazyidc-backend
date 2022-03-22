@@ -305,6 +305,12 @@ async function getPackage(ssdType) {
       }
 
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
+    } else {
+      let packageList = {
+        package: []
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
     }
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)

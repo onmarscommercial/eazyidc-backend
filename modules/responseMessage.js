@@ -9,6 +9,7 @@ module.exports = {
   shutdownServerSuccess: "ปิดเครื่องสำเร็จ",
   uploadFileSuccess: "อัพโหลดไฟล์สำเร็จ",
   deleteServerSuccess: "ลบเซิร์ฟเวอร์สำเร็จ",
+  SubmitDataSuccess: "เพิ่มข้อมูลสำเร็จ",
 
   errorCode: 1,
   errorStatus: "error",
