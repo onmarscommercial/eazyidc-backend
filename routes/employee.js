@@ -5,10 +5,6 @@ const employee = require('../modules/employee')
 const auth = require('../middleware/auth')
 const eazy = require('../modules/eazyidc')
 
-router.get('/test', async (req, res) => {
-  res.status(200).send({ message: "hi" })
-})
-
 router.post('/login', async (req, res) => {
   const { username, password } = req.body
 
@@ -59,6 +55,12 @@ router.post('/add-customer', auth, async (req, res) => {
 
 router.post('/check-verify-identity', async (req, res) => {
 
+})
+
+router.post('/download', async (req, res) => {
+  const { accountId } = req.body
+
+  res.download(await employee.downloadFile(accountId))
 })
 
 module.exports = router

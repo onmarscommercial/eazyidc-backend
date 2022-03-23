@@ -3,7 +3,7 @@ const mariadb = require('mariadb')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const eazy = require('./eazyidc')
-const resMsg = require('./responseMessage')
+const resMsg = require('./responseMessage');
 const saltRounds = 10
 
 const pool = mariadb.createPool({
@@ -204,6 +204,7 @@ async function getCustomer() {
           lastname: rows[i].lastname,
           companyName: rows[i].companyName,
           taxId: rows[i].taxId,
+          status: rows[i].status
         })
       }
 
@@ -257,6 +258,21 @@ async function checkVerifyIdentity() {
 
 }
 
+async function downloadFile(accountId) {
+  let db;
+  try {
+    db = await pool.getConnection();
+    let getIdentity = await db.query("SELECT * FROM `file_identity` WHERE accountId LIKE ?;", [accountId])
+    if (getIdentity.length > 0) {
+      return "./public/" + getIdentity[0].filepath
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 module.exports = {
   login,
   getEmployee,
@@ -269,5 +285,6 @@ module.exports = {
   getCustomer,
   addCustomer, 
   editCustomer,
-  checkVerifyIdentity
+  checkVerifyIdentity,
+  downloadFile
 }
