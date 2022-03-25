@@ -188,7 +188,21 @@ async function getCustomer() {
   let db;
   try {
     db = await pool.getConnection()
-    let rows = await db.query("SELECT * FROM `account`")
+    //let rows = await db.query("SELECT * FROM `account` a JOIN `file_identity` f ON a.accountId = f.accountId;")
+    let rows = await db.query(`SELECT a.accountId AS accountId, 
+                                      a.email AS email, 
+                                      a.password AS password, 
+                                      a.phone AS phone, 
+                                      a.customerType AS customerType, 
+                                      a.firstname AS firstname, 
+                                      a.lastname AS lastname, 
+                                      a.companyName AS companyName, 
+                                      a.taxId AS taxId,
+                                      a.status AS status,
+                                      f.filepath AS filepath
+                              FROM account a 
+                              LEFT JOIN file_identity f ON a.accountId = f.accountId;`)
+
     if (rows.length > 0) {
       let customerList = {
         customer: []
@@ -204,7 +218,8 @@ async function getCustomer() {
           lastname: rows[i].lastname,
           companyName: rows[i].companyName,
           taxId: rows[i].taxId,
-          status: rows[i].status
+          status: rows[i].status,
+          filepath: rows[i].filepath
         })
       }
 
