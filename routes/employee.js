@@ -34,13 +34,21 @@ router.get('/package', auth, async (req, res) => {
 })
 
 router.post('/add-package', auth, async (req, res) => {
-  const { cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy } = req.body
+  const { packageCode, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, createdBy } = req.body
 
-  res.json(await employee.addPackage(cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy))
+  res.json(await employee.addPackage(packageCode, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, createdBy))
 })
 
-router.post('/edit-package', async (req, res) => {
+router.post('/get-edit-package', auth, async (req, res) => {
+  const { packageId } = req.body
 
+  res.json(await employee.getEditPackage(packageId))
+})
+
+router.post('/edit-package', auth, async (req, res) => {
+  const { packageId, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy } = req.body
+  
+  res.json(await employee.editPackage(packageId, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy))
 })
 
 router.get('/customer', auth, async (req, res) => {

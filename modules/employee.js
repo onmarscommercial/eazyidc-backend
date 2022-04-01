@@ -136,18 +136,18 @@ async function getPackage() {
       }
 
       for (let i = 0; i < rows.length; i++) {
-        if (rows[i].status == 1) {
-          packageList.package.push({
-            packageId: rows[i].packageId,
-            cpu_unit: rows[i].cpu_unit,
-            memory_unit: rows[i].memory_unit,
-            ssd_unit: rows[i].ssd_unit,
-            transfer_unit: rows[i].transfer_unit,
-            price: rows[i].price,
-            ssd_type: rows[i].ssd_type,
-            status: rows[i].status,
-          })
-        }
+        packageList.package.push({
+          packageId: rows[i].packageId,
+          packageCode: rows[i].packageCode,
+          cpu_unit: rows[i].cpu_unit,
+          memory_unit: rows[i].memory_unit,
+          ssd_unit: rows[i].ssd_unit,
+          transfer_unit: rows[i].transfer_unit,
+          price: rows[i].price,
+          ssd_type: rows[i].ssd_type,
+          amount: rows[i].amount,
+          status: rows[i].status,
+        })
       }
 
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, packageList)
@@ -165,11 +165,11 @@ async function getPackage() {
   }
 }
 
-async function addPackage(cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy) {
+async function addPackage(packageCode, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, createdBy) {
   let db;
   try {
     db = await pool.getConnection()
-    let rows = await db.query("INSERT INTO `package`(`packageId`, `cpu_unit`, `memory_unit`, `ssd_unit`, `transfer_unit`, `price`, `ssd_type`, `status`, `createdBy`, `createdAt`) VALUES (?,?,?,?,?,?,?,?,?,?);", ['', cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, status, createdBy, eazy.getDate()])
+    let rows = await db.query("INSERT INTO `package`(`packageId`, `packageCode`, `cpu_unit`, `memory_unit`, `ssd_unit`, `transfer_unit`, `price`, `ssd_type`, `amount`, `status`, `createdBy`, `createdAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);", ['', packageCode, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, createdBy, eazy.getDate()])
     if (rows) {
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
     }
@@ -180,8 +180,51 @@ async function addPackage(cpu_unit, memory_unit, ssd_unit, transfer_unit, price,
   }
 }
 
-async function editPackage() {
+async function getEditPackage(packageId) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `package` WHERE packageId LIKE ?;", [packageId])
+    if (rows.length === 1) {
+      let result = {
+        package: {
+          packageId: rows[0].packageId,
+          packageCode: rows[0].packageCode,
+          cpu_unit: rows[0].cpu_unit,
+          memory_unit: rows[0].memory_unit,
+          ssd_unit: rows[0].ssd_unit,
+          transfer_unit: rows[0].transfer_unit,
+          price: rows[0].price,
+          ssd_type: rows[0].ssd_type,
+          amount: rows[0].amount,
+          status: rows[0].status,
+        }
+      }
 
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, result)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function editPackage(packageId, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let edit = await db.query("UPDATE `package` SET cpu_unit = ?, memory_unit = ?, ssd_unit = ?, transfer_unit = ?, price = ?, ssd_type = ?, amount = ?, status = ?, updatedBy = ?, updatedAt = ? WHERE `packageId` LIKE ?;", [cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy, eazy.getDate(), packageId])
+    if (edit.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.EditDataSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function getCustomer() {
@@ -288,6 +331,10 @@ async function downloadFile(accountId) {
   }
 }
 
+async function previewImage() {
+
+}
+
 module.exports = {
   login,
   getEmployee,
@@ -296,6 +343,7 @@ module.exports = {
   deleteEmployee,
   getPackage,
   addPackage,
+  getEditPackage,
   editPackage,
   getCustomer,
   addCustomer, 
