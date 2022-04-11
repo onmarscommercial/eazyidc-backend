@@ -294,11 +294,14 @@ async function getPackage(ssdType) {
         if (rows[i].status == 1) {
           packageList.package.push({
             packageId: rows[i].packageId,
+            packageCode: rows[i].packageCode,
             cpu_unit: rows[i].cpu_unit,
             memory_unit: rows[i].memory_unit,
             ssd_unit: rows[i].ssd_unit,
             transfer_unit: rows[i].transfer_unit,
             price: rows[i].price,
+            ssd_type: rows[i].ssd_type,
+            amount: rows[i].amount,
             status: rows[i].status,
           })
         }

@@ -11,6 +11,7 @@ module.exports = {
   deleteServerSuccess: "ลบเซิร์ฟเวอร์สำเร็จ",
   SubmitDataSuccess: "เพิ่มข้อมูลสำเร็จ",
   EditDataSuccess: "แก้ไขข้อมูลสำเร็จ",
+  approveVerifySuccess: "อนุมัติสำเร็จ",
 
   errorCode: 1,
   errorStatus: "error",

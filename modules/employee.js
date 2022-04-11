@@ -244,7 +244,8 @@ async function getCustomer() {
                                       a.status AS status,
                                       f.filepath AS filepath
                               FROM account a 
-                              LEFT JOIN file_identity f ON a.accountId = f.accountId;`)
+                              LEFT JOIN file_identity f ON a.accountId = f.accountId
+                              WHERE a.status = 'WA';`)
 
     if (rows.length > 0) {
       let customerList = {
@@ -273,6 +274,41 @@ async function getCustomer() {
       }
 
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, customerList)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function searchCustomer(searchData) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM account WHERE accountId = ? OR phone = ?;", [searchData, searchData])
+    if (rows.length > 0) {
+      let result = {
+        customer: {
+          accountId: rows[0].accountId,
+          email: rows[0].email,
+          phone: eazy.formatPhoneNumber(rows[0].phone),
+          customerType: rows[0].customerType,
+          firstname: rows[0].firstname,
+          lastname: rows[0].lastname,
+          companyName: rows[0].companyName,
+          taxId: rows[0].taxId,
+          address: rows[0].address,
+          province: rows[0].province,
+          postcode: rows[0].postcode,
+          status: rows[0].status,
+          active: rows[0].active,
+          createdDate: eazy.formatDate(rows[0].created_date),
+          verifiedDate: eazy.formatDate(rows[0].verified_date),
+        }
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, result)
     }
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
@@ -312,8 +348,54 @@ async function editCustomer() {
 
 }
 
-async function checkVerifyIdentity() {
+async function getCountWaitApprove() {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let count = await db.query("SELECT COUNT(`accountId`) AS wa_amount FROM `account` WHERE `status` = 'WA';")
+    if (count) {
+      let amount = count[0].wa_amount
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, amount)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
 
+async function checkVerifyIdentity(accountId) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let verify = await db.query("UPDATE `account` SET status = 'A', verified_date = ? WHERE accountId = ?;", [eazy.getDate(), accountId])
+    if (verify.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.approveVerifySuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function addAddressCustomer(accountId, address, province, postcode) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let update = await db.query("UPDATE `account` SET address = ?, province = ?, postcode = ? WHERE accountId = ?;", [address, province, postcode, accountId])
+    if (update.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function downloadFile(accountId) {
@@ -331,8 +413,20 @@ async function downloadFile(accountId) {
   }
 }
 
-async function previewImage() {
-
+async function previewFile(accountId) {
+  let db;
+  try {
+    db = await pool.getConnection();
+    let identity = await db.query("SELECT * FROM `file_identity` WHERE accountId LIKE ?;", [accountId])
+    if (identity.length > 0) {
+      let url = identity[0].filepath
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, url)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 module.exports = {
@@ -346,8 +440,12 @@ module.exports = {
   getEditPackage,
   editPackage,
   getCustomer,
+  searchCustomer,
   addCustomer, 
   editCustomer,
+  getCountWaitApprove,
   checkVerifyIdentity,
-  downloadFile
+  addAddressCustomer,
+  downloadFile,
+  previewFile
 }

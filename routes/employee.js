@@ -47,12 +47,18 @@ router.post('/get-edit-package', auth, async (req, res) => {
 
 router.post('/edit-package', auth, async (req, res) => {
   const { packageId, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy } = req.body
-  
+
   res.json(await employee.editPackage(packageId, cpu_unit, memory_unit, ssd_unit, transfer_unit, price, ssd_type, amount, status, updatedBy))
 })
 
 router.get('/customer', auth, async (req, res) => {
   res.json(await employee.getCustomer())
+})
+
+router.post('/search-customer', auth, async (req, res) => {
+  const { searchData } = req.body
+
+  res.json(await employee.searchCustomer(searchData))
 })
 
 router.post('/add-customer', auth, async (req, res) => {
@@ -61,14 +67,36 @@ router.post('/add-customer', auth, async (req, res) => {
   res.json(await employee.addCustomer(customerType, firstname, lastname, companyName, taxId, email, password, phone))
 })
 
-router.post('/check-verify-identity', async (req, res) => {
+router.post('/edit-customer', async (req, res) => {
 
+})
+
+router.get('/count-wait-approve', auth, async (req, res) => {
+  res.json(await employee.getCountWaitApprove())
+})
+
+router.post('/check-verify-identity', auth, async (req, res) => {
+  const { accountId } = req.body
+
+  res.json(await employee.checkVerifyIdentity(accountId))
+})
+
+router.post('/add-address-customer', auth,  async (req, res) => {
+  const { accountId, address, province, postcode } = req.body
+
+  res.json(await employee.addAddressCustomer(accountId, address, province, postcode))
 })
 
 router.post('/download', async (req, res) => {
   const { accountId } = req.body
 
   res.download(await employee.downloadFile(accountId))
+})
+
+router.post('/preview-file', auth, async (req, res) => {
+  const { accountId } = req.body
+
+  res.json(await employee.previewFile(accountId))
 })
 
 module.exports = router
