@@ -12,6 +12,7 @@ module.exports = {
   SubmitDataSuccess: "เพิ่มข้อมูลสำเร็จ",
   EditDataSuccess: "แก้ไขข้อมูลสำเร็จ",
   approveVerifySuccess: "อนุมัติสำเร็จ",
+  changePasswordSuccess: "เปลี่ยนรหัสผ่านสำเร็จ",
 
   errorCode: 1,
   errorStatus: "error",

@@ -67,8 +67,22 @@ router.post('/add-customer', auth, async (req, res) => {
   res.json(await employee.addCustomer(customerType, firstname, lastname, companyName, taxId, email, password, phone))
 })
 
-router.post('/edit-customer', async (req, res) => {
+router.post('/edit-customer', auth, async (req, res) => {
+  const { accountId, email, phone, customerType, firstname, lastname, companyName, taxId, address, province, postcode } = req.body
 
+  res.json(await employee.editCustomer(accountId, email, phone, customerType, firstname, lastname, companyName, taxId, address, province, postcode))
+})
+
+router.post('/change-pwd-customer', auth, async (req, res) => {
+  const { accountId, password, confirmPassword } = req.body
+
+  res.json(await employee.changePWDCustomer(accountId, password, confirmPassword))
+})
+
+router.post('/banned-user', auth, async (req, res) => {
+  const { accountId } = req.body
+
+  res.json(await employee.bannedUser(accountId))
 })
 
 router.get('/count-wait-approve', auth, async (req, res) => {

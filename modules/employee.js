@@ -344,8 +344,71 @@ async function addCustomer(customerType, firstname, lastname, companyName, taxId
   }
 }
 
-async function editCustomer() {
+async function editCustomer(accountId, email, phone, customerType, firstname, lastname, companyName, taxId, address, province, postcode) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let editCustomer = await db.query("UPDATE `account` SET email = ?, phone = ?, customerType = ?, firstname = ?, lastname = ?, companyName = ?, taxId = ?, address = ?, province = ?, postcode = ? WHERE accountId LIKE ?;", [email, phone, customerType, firstname, lastname, companyName, taxId, address, province, postcode, accountId])
+    if (editCustomer.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.EditDataSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
 
+async function changePWDCustomer(accountId, password, confirmPassword) {
+  if (!password || !confirmPassword) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorInput)
+  }
+
+  if (password !== confirmPassword) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorChangePassword)
+  }
+  
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `account` WHERE accountId LIKE ?;", [accountId])
+    if (rows.length > 0) {
+      const salt = bcrypt.genSaltSync(saltRounds)
+      const newPassword = bcrypt.hashSync(password, salt)
+
+      let pwdChanged = await db.query("UPDATE `account` SET password = ? WHERE accountId LIKE ?;", [newPassword, accountId])
+      if (pwdChanged.affectedRows === 1) {
+        return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.changePasswordSuccess)
+      } else {
+        return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+      }
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.userNotfound)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function bannedUser(accountId) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("UPDATE `account` SET active = ? WHERE accountId LIKE ?;", [0, accountId])
+    if (rows.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function getCountWaitApprove() {
@@ -443,6 +506,8 @@ module.exports = {
   searchCustomer,
   addCustomer, 
   editCustomer,
+  changePWDCustomer,
+  bannedUser,
   getCountWaitApprove,
   checkVerifyIdentity,
   addAddressCustomer,
