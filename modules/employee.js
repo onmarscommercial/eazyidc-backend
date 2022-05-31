@@ -116,12 +116,83 @@ async function addEmployee(createdBy, username, password, firstname, lastname, r
   }
 }
 
-async function editEmployee() {
+async function getEditEmployee(employeeId) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `employee` WHERE employeeId LIKE ?;", [employeeId])
+    if (rows.length === 1) {
+      let result = {
+        employee: {
+          employeeId: rows[0].employeeId,
+          username: rows[0].username,
+          firstname: rows[0].firstname,
+          lastname: rows[0].lastname,
+          status: rows[0].status
+        }
+      }
 
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, result)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
+async function editEmployee(employeeId, username, status, updatedBy) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let edit = await db.query("UPDATE `employee` SET username = ?, status = ?, updatedBy = ?, updatedAt = ? WHERE employeeId LIKE ?;", [username, status, updatedBy, eazy.getDate(), employeeId])
+    if (edit.affectedRows === 1) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.EditDataSuccess)
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function deleteEmployee() {
 
+}
+
+async function changePWD(employeeId, password, confirmPassword) {
+  if (!password || !confirmPassword) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorInput)
+  }
+
+  if (password !== confirmPassword) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorChangePassword)
+  }
+
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("SELECT * FROM `employee` WHERE employeeId LIKE ?;", [employeeId])
+    if (rows.length > 0) {
+      const salt = bcrypt.genSaltSync(saltRounds)
+      const newPassword = bcrypt.hashSync(password, salt)
+
+      let pwdChanged = await db.query("UPDATE `employee` SET password = ?, updatedBy = ?, updatedAt = ? WHERE employeeId LIKE ?;", [newPassword, employeeId, eazy.getDate(), employeeId])
+      if (pwdChanged.affectedRows === 1) {
+        return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.changePasswordSuccess)
+      } else {
+        return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+      }
+    } else {
+      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.userNotfound)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+  } finally {
+    if (db) db.release()
+  }
 }
 
 async function getPackage() {
@@ -496,8 +567,10 @@ module.exports = {
   login,
   getEmployee,
   addEmployee,
+  getEditEmployee,
   editEmployee,
   deleteEmployee,
+  changePWD,
   getPackage,
   addPackage,
   getEditPackage,

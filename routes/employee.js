@@ -21,12 +21,26 @@ router.post('/add-employee', auth, async (req, res) => {
   res.json(await employee.addEmployee(createdBy, username, password, firstname, lastname, roleId, status))
 })
 
-router.post('/edit-employee', async (req, res) => {
-  
+router.post('/get-edit-employee', auth, async (req, res) => {
+  const { employeeId } = req.body
+
+  res.json(await employee.getEditEmployee(employeeId))
+})
+
+router.post('/edit-employee', auth, async (req, res) => {
+  const { employeeId, username, status, updatedBy } = req.body
+
+  res.json(await employee.editEmployee(employeeId, username, status, updatedBy))
 })
 
 router.post('/delete-employee', async (req, res) => {
   
+})
+
+router.post('/change-pwd', auth, async (req, res) => {
+  const { employeeId, password, confirmPassword } = req.body
+
+  res.json(await employee.changePWD(employeeId, password, confirmPassword))
 })
 
 router.get('/package', auth, async (req, res) => {

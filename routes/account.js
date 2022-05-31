@@ -109,4 +109,10 @@ router.post('/delete-server', auth, async (req, res) => {
   res.json(await account.deleteServer(serverId))
 })
 
+router.post('/report-problem', auth, async (req, res) => {
+  const { accountId, subject, detail } = req.body
+
+  res.json(await account.reportProblem(accountId, subject, detail))
+})
+
 module.exports = router

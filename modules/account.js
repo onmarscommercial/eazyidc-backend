@@ -174,7 +174,11 @@ async function createServer(email, osType, osVersion, ssdType, packageId, hostNa
     if (rows.length > 0) {
       let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11.1.1.1', 1, 1, eazy.getDate(), eazy.getFutureDate()])
       if (server) {
-        return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+        //gen oder this step
+        let order = await db.query("INSERT INTO `order_sales`(`orderId`,`order_date`,`serverId`) VALUES (?,?,?);", ['', eazy.getDate(), server[0].serverId])
+        if (order) {
+          return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+        } 
       }
     }
   } catch (error) {
@@ -396,6 +400,21 @@ async function deleteServer(serverId) {
   }
 }
 
+async function reportProblem(accountId, subject, detail) {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query("INSERT INTO `problem`(`problemId`,`accountId`,`subject`,`detail`,`report_date`) VALUES (?,?,?,?,?)", ['', accountId, subject, detail, eazy.getDate()])
+    if (rows) {
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 module.exports = {
   login,
   register,
@@ -411,5 +430,6 @@ module.exports = {
   shutdownServer,
   restartServer,
   consoleServer,
-  deleteServer
+  deleteServer,
+  reportProblem
 }
