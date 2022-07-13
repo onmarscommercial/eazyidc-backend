@@ -28,9 +28,9 @@ router.post('/get-edit-employee', auth, async (req, res) => {
 })
 
 router.post('/edit-employee', auth, async (req, res) => {
-  const { employeeId, username, status, updatedBy } = req.body
+  const { employeeId, username, password, status, updatedBy } = req.body
 
-  res.json(await employee.editEmployee(employeeId, username, status, updatedBy))
+  res.json(await employee.editEmployee(employeeId, username, password, status, updatedBy))
 })
 
 router.post('/delete-employee', async (req, res) => {
@@ -125,6 +125,10 @@ router.post('/preview-file', auth, async (req, res) => {
   const { accountId } = req.body
 
   res.json(await employee.previewFile(accountId))
+})
+
+router.get('/problem', auth, async (req, res) => {
+  res.json(await employee.getProblem())
 })
 
 module.exports = router

@@ -141,15 +141,21 @@ async function getEditEmployee(employeeId) {
   }
 }
 
-async function editEmployee(employeeId, username, status, updatedBy) {
+async function editEmployee(employeeId, username, password, status, updatedBy) {
   let db;
   try {
     db = await pool.getConnection()
-    let edit = await db.query("UPDATE `employee` SET username = ?, status = ?, updatedBy = ?, updatedAt = ? WHERE employeeId LIKE ?;", [username, status, updatedBy, eazy.getDate(), employeeId])
-    if (edit.affectedRows === 1) {
-      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.EditDataSuccess)
-    } else {
-      return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+    let rows = await db.query("SELECT * FROM `employee` WHERE employeeId LIKE ?;", [employeeId])
+    if (rows.length > 0) {
+      const salt = bcrypt.genSaltSync(saltRounds)
+      const newPassword = bcrypt.hashSync(password, salt)
+
+      let edit = await db.query("UPDATE `employee` SET username = ?, password = ?, status = ?, updatedBy = ?, updatedAt = ? WHERE employeeId LIKE ?;", [username, newPassword, status, updatedBy, eazy.getDate(), employeeId])
+      if (edit.affectedRows === 1) {
+        return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.EditDataSuccess)
+      } else {
+        return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorMessage)
+      }
     }
   } catch (error) {
     return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
@@ -563,6 +569,44 @@ async function previewFile(accountId) {
   }
 }
 
+async function getProblem() {
+  let db;
+  try {
+    db = await pool.getConnection()
+    let rows = await db.query(`SELECT p.problemId, p.accountId, p.subject, p.detail, p.report_date, p.status, a.firstname, a.lastname, a.companyName 
+                               FROM problem p JOIN account a ON p.accountId = a.accountId`)
+    if (rows.length > 0) {
+      let problemList = {
+        problem: []
+      }
+
+      for (let i = 0; i < rows.length; i++) {
+        problemList.problem.push({
+          problemId: rows[i].problemId,
+          accountId: rows[i].accountId,
+          accountName: rows[i].companyName === null ? rows[i].firstname + " " + rows[i].lastname : rows[i].companyName,
+          subject: rows[i].subject,
+          detail: rows[i].detail,
+          report_date: eazy.formatDate(rows[i].report_date),
+          status: rows[i].status,
+        })
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, problemList)
+    } else {
+      let problemList = {
+        problem: []
+      }
+
+      return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage, problemList)
+    }
+  } catch (error) {
+    return eazy.response(resMsg.errorCode, resMsg.errorStatus, resMsg.errorConnection)
+  } finally {
+    if (db) db.release()
+  }
+}
+
 module.exports = {
   login,
   getEmployee,
@@ -585,5 +629,6 @@ module.exports = {
   checkVerifyIdentity,
   addAddressCustomer,
   downloadFile,
-  previewFile
+  previewFile,
+  getProblem
 }

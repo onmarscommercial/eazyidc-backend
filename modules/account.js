@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const axios = require('axios')
 const resMsg = require('./responseMessage')
+const constMsg = require('./constant')
 const saltRounds = 10
 
 const pool = mariadb.createPool({
@@ -172,13 +173,16 @@ async function createServer(email, osType, osVersion, ssdType, packageId, hostNa
     db = await pool.getConnection();
     let rows = await db.query("SELECT * FROM `account` WHERE email LIKE ?;", [ email ])
     if (rows.length > 0) {
-      let server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11.1.1.1', 1, 1, eazy.getDate(), eazy.getFutureDate()])
-      if (server) {
+      let add_server = await db.query("INSERT INTO `account_server`(`serverId`,`accountId`,`packageId`,`os_type`,`os_version`,`ssd_type`,`hostname`,`username`,`password`,`ip_address`,`onoff`,`status`,`created_date`,`expired_date`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?);", ['',rows[0].accountId, packageId, osType, osVersion, ssdType, hostName, userName, password, '11.1.1.1', 1, 1, eazy.getDate(), eazy.getFutureDate()])
+      if (add_server) {
         //gen oder this step
-        let order = await db.query("INSERT INTO `order_sales`(`orderId`,`order_date`,`serverId`) VALUES (?,?,?);", ['', eazy.getDate(), server[0].serverId])
-        if (order) {
-          return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
-        } 
+        let server = await db.query("SELECT * FROM `account_server` ORDER BY serverId DESC LIMIT 1") 
+        if (server.length === 1) {
+          let order = await db.query("INSERT INTO `order_sales`(`orderId`,`order_date`,`serverId`) VALUES (?,?,?);", ['', eazy.getDate(), server[0].serverId])
+          if (order) {
+            return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.successMessage)
+          }
+        }
       }
     }
   } catch (error) {
@@ -196,9 +200,9 @@ async function getServer(email) {
     if (account.length > 0) {
       let rows = await db.query("SELECT COUNT(`serverId`) AS server FROM account_server WHERE `accountId` LIKE ? AND account_server.`status` = ?;", [account[0].accountId, 1])
       if (rows) {
-        let acc_server = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, onoff, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
-                                         FROM account_server JOIN package ON account_server.packageId = package.packageId 
-                                         WHERE accountId LIKE ? AND account_server.status = ?;`, [account[0].accountId, 1])
+        let acc_server = await db.query(`SELECT a.serverId, a.accountId, a.packageId as packageId, a.os_type, a.os_version, a.ssd_type, a.hostname, a.username, a.password, a.ip_address, a.onoff, a.status as server_status, a.created_date, a.expired_date, p.cpu_unit, p.memory_unit, p.ssd_unit, p.transfer_unit 
+                                         FROM account_server a JOIN package p ON a.packageId = p.packageId 
+                                         WHERE a.accountId LIKE ? AND a.status = ?;`, [account[0].accountId, 1])
         if (acc_server.length > 0) {
           let server = {
             serverUnit: rows[0].server,
@@ -217,7 +221,7 @@ async function getServer(email) {
               username: acc_server[i].username,
               password: acc_server[i].password,
               ip_address: acc_server[i].ip_address,
-              onoff: acc_server[0].onoff,
+              onoff: acc_server[i].onoff,
               status: acc_server[i].server_status,
               created_date: acc_server[i].created_date,
               expired_date: acc_server[i].expired_date,
@@ -243,9 +247,9 @@ async function getServerDetail(serverId) {
   let db 
   try {
     db = await pool.getConnection()
-    let rows = await db.query(`SELECT account_server.serverId, account_server.accountId, account_server.packageId as packageId, os_type, os_version, ssd_type, hostname, username, password, ip_address, onoff, account_server.status as server_status, account_server.created_date, account_server.expired_date, package.cpu_unit, package.memory_unit, package.ssd_unit, package.transfer_unit
-                               FROM account_server JOIN package ON account_server.packageId = package.packageId 
-                               WHERE serverId LIKE ?;`, [serverId])
+    let rows = await db.query(`SELECT a.serverId, a.accountId, a.packageId as packageId, a.os_type, a.os_version, a.ssd_type, a.hostname, a.username, a.password, a.ip_address, a.onoff, a.status as server_status, a.created_date, a.expired_date, p.cpu_unit, p.memory_unit, p.ssd_unit, p.transfer_unit
+                               FROM account_server a JOIN package p ON a.packageId = p.packageId 
+                               WHERE a.serverId LIKE ?;`, [serverId])
     if (rows.length === 1) {
       let serverDetail = {
         server: {
@@ -404,7 +408,7 @@ async function reportProblem(accountId, subject, detail) {
   let db;
   try {
     db = await pool.getConnection()
-    let rows = await db.query("INSERT INTO `problem`(`problemId`,`accountId`,`subject`,`detail`,`report_date`) VALUES (?,?,?,?,?)", ['', accountId, subject, detail, eazy.getDate()])
+    let rows = await db.query("INSERT INTO `problem`(`problemId`,`accountId`,`subject`,`detail`,`report_date`, `status`) VALUES (?,?,?,?,?,?)", ['', accountId, subject, detail, eazy.getDate(), constMsg.pending])
     if (rows) {
       return eazy.response(resMsg.successCode, resMsg.successStatus, resMsg.SubmitDataSuccess)
     }
